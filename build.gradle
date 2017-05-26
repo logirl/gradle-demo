@@ -1,0 +1,14 @@
+group 'cc.logirl'
+version '1.0-SNAPSHOT'
+
+
+subprojects {
+    apply plugin: 'java'
+
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        jcenter()
+    }
+}
+

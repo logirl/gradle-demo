@@ -1,0 +1,69 @@
+group 'cc.logirl'
+version '1.0-SNAPSHOT'
+
+apply plugin: 'java'
+apply plugin: 'war'
+apply from: 'https://raw.github.com/akhikhl/gretty/master/pluginScripts/gretty.plugin'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven {
+        url "http://maven.aliyun.com/nexus/content/groups/public/"
+    }
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    providedCompile 'javax.servlet:javax.servlet-api:3.1.0'
+}
+gretty {
+    httpPort = 9090
+    contextPath = 'aaa'
+}
+task printVersion << {
+    println "Version: $version"
+}
+
+
+configurations {
+    cargo { // 通过名称定义新的配置
+        description = '配置的描述信息'
+        visible = false // 设置配置的可见性
+    }
+}
+
+task deployToLocalTomcat << {
+    // 以文件树的方式获取cargo配置的所有依赖
+    FileTree cargoDeps = configurations.getByName('cargo').asFileTree
+    // 使用完全限定依赖的连接路径来解决Cargo Ant task的定义
+    ant.taskdef(resource: 'cargo.tasks', classpath: cargoDeps.asPath)
+    ant.cargo(containerId: 'tomcat7x', action: 'run', output: '$buildDir/output.log') {
+        configuration {
+            deployable(type: 'war', file: 'aaa.war')
+        }
+        zipUrlInstaller(installUrl: 'http://archive.apache.org/dist/tomcat/tomcat-7/v7.0.32/bin/apache-tomcat-7.0.32.zip')
+    }
+}
+
+ext.cargoGroup = 'org.codehaus.cargo'
+ext.cargoVersion = '1.3.1'
+
+dependencies {
+    cargo group: cargoGroup, name: 'cargo-core-uberjar', version: cargoVersion
+    cargo "$cargoGroup:cargo-ant:$cargoVersion"
+}
+
+task printDependencies << {
+    configurations.getByName('cargo').each { dependency -> println dependency }
+}
+
+configurations.cargo.resolutionStrategy {
+    force 'org.codehaus.cargo:cargo-ant:1.3.0'
+}
+
+
+
+
